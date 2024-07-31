@@ -1,50 +1,58 @@
 <?php
-// Ruta del archivo donde se guardarán los nombres
-$archivo = 'estudiantes.txt';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+	// Obtener los valores del formulario
+	$nombre 	= $_POST['nombre'] ?? '';
+	$email 		= $_POST['email'] ?? '';
+	$address 	= 	$_POST['address'] ?? '';
+	$pais 		=	$_POST['pais'] ?? '';
 
-// Verificar si el formulario fue enviado
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Obtener el nombre del formulario
-    $nombre = trim(htmlspecialchars($_POST['nombre']));
+	// Validar si se enviaron los valores
+	if (!empty($nombre) && !empty($email) && !empty($address) && !empty($pais)) {
+		// Ruta y nombre del archivo
+		$ruta_archivo = "./baseDatos.txt";
 
-    // Verificar si el nombre no está vacío
-    if (!empty($nombre)) {
-        // Guardar el nombre en el archivo
-        if (file_put_contents($archivo, $nombre . PHP_EOL, FILE_APPEND | LOCK_EX) !== false) {
-            $mensaje = "Nombre registrado con éxito.";
-        } else {
-            $mensaje = "Error al registrar el nombre.";
-        }
-    } else {
-        $mensaje = "El campo del nombre no puede estar vacío.";
-    }
+		// Verificar si el archivo existe
+		$archivo_existe = file_exists($ruta_archivo);
+
+		// Obtener el número de registros actuales o inicializar en 0 si el archivo no existe
+		$num_registros = 0;
+		if ($archivo_existe) {
+			$lineas = file($ruta_archivo, FILE_SKIP_EMPTY_LINES);
+			foreach ($lineas as $linea) {
+				if (preg_match('/^\d+\./', $linea)) {
+					$num_registros++;
+				}
+			}
+		}
+
+		// Incrementar el número de registros para el nuevo registro
+		$num_registros++;
+
+		// Abrir el archivo en modo de escritura
+		$file = fopen($ruta_archivo, "a");
+		if ($file) {
+			// Escribir la cabecera si el archivo no existe
+			if (!$archivo_existe) {
+				fwrite($file, "Id \tNombre Persona \t\tEmail Persona \t\t\tDirección \t\tPais" . PHP_EOL);
+				fwrite($file, "=========================================================================" . PHP_EOL);
+			}
+
+			// Escribir el nuevo registro en el archivo con el formato requerido
+			fwrite($file, "$num_registros.\t$nombre\t\t\t$email\t\t\t$address\t\t$pais" . PHP_EOL);
+			fwrite($file, " -------------------------------------------------------------------------" . PHP_EOL);
+
+			// Cerrar el archivo
+			fclose($file);
+
+			// Redirigir a una página específica
+			header('Location: index.html');
+			exit();
+		} else {
+			echo "Error al abrir el archivo.";
+		}
+	} else {
+		echo "Por favor, completa todos los campos del formulario.";
+	}
+} else {
+	echo "Acceso inválido.";
 }
-?>
-
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Registro de Nombres de Estudiantes</title>
-</head>
-<body>
-    <h1>Registro de Nombres de Estudiantes</h1>
-    
-    <!-- Mostrar mensaje de éxito o error -->
-    <?php if (isset($mensaje)): ?>
-        <p><?php echo $mensaje; ?></p>
-    <?php endif; ?>
-
-    <!-- Formulario para ingresar nombres -->
-    <form action="index.php" method="post">
-        <label for="nombre">Nombre:</label>
-        <input type="text" id="nombre" name="nombre" required>
-        <br>
-        <input type="submit" value="Registrar">
-    </form>
-
-    <!-- Enlace para ver la lista de nombres registrados -->
-    <a href="mostrar_nombres.php">Ver lista de nombres registrados</a>
-</body>
-</html>
-
